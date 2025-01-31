@@ -53,4 +53,37 @@ body {
     padding: 10px;
     text-align: left;
   }
+/*
+  body {
+   /* background-image: url('imagens/log-doutor-agora.png');  Ajuste o nome conforme necessário */
+    /*background-size: 100% auto; /* Ajusta a largura para 100% e mantém a altura proporcional */
+    /*background-size: cover;  Faz a imagem cobrir toda a tela */
+   /* background-position: center; /* Centraliza a imagem */
+   /* background-repeat: no-repeat; /* Evita que a imagem se repita */
+   /* height: 100vh; /* Garante que o fundo ocupe toda a altura da tela */
+   /* margin: 0;
+    padding: 0;
+  } */
+
+  body {
+    position: relative;
+    margin: 0;
+    padding: 0;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('imagens/log-doutor-agora.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    opacity: 0.1; /* Ajuste o valor para mais ou menos transparência */
+    z-index: -1; /* Mantém a imagem atrás do conteúdo */
+}
+
   

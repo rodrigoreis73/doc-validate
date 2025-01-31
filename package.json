@@ -11,9 +11,11 @@
   "license": "ISC",
   "description": "Gerenciador de validade de documento",
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.3",
     "cors": "^2.8.5",
     "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
     "node-cron": "^3.0.3",
     "nodemailer": "^6.10.0",
     "sqlite3": "^5.1.7"

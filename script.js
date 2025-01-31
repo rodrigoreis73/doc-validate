@@ -35,11 +35,55 @@ async function loadDocuments() {
       (doc) => `
     <tr>
       <td>${doc.name}</td>
-      <td>${new Date(doc.dueDate).toLocaleDateString()}</td>
+      <td>${formatDate(doc.dueDate)}</td>
+      <td>
+        <button onclick="editDocument(${doc.id}, '${doc.name}', '${doc.dueDate}')">✏️ Editar</button>
+        <button onclick="deleteDocument(${doc.id})">🗑️ Excluir</button>
+      </td>
     </tr>`
     )
     .join("");
 }
+function formatDate(dateString) {
+  const date = new Date(dateString + "T00:00:00"); // Forçar horário zero UTC
+  return date.toLocaleDateString("pt-BR", { timeZone: "UTC" }); // Ajustar para o fuso correto
+}
+//Função para editar um documento
+function editDocument(id, currentName, currentDueDate) {
+  const newName = prompt("Novo nome do documento:", currentName);
+  const newDueDate = prompt("Nova data de vencimento (AAAA-MM-DD):", currentDueDate);
+
+  if (newName && newDueDate) {
+    fetch(`http://localhost:3000/documents/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: newName, dueDate: newDueDate }),
+    }).then((response) => {
+      if (response.ok) {
+        alert("Documento atualizado com sucesso!");
+        loadDocuments();
+      } else {
+        alert("Erro ao atualizar documento.");
+      }
+    });
+  }
+}
+
+//função para deletar documento
+function deleteDocument(id) {
+  if (confirm("Tem certeza que deseja excluir este documento?")) {
+    fetch(`http://localhost:3000/documents/${id}`, { method: "DELETE" }).then((response) => {
+      if (response.ok) {
+        alert("Documento excluído com sucesso!");
+        loadDocuments();
+      } else {
+        alert("Erro ao excluir documento.");
+      }
+    });
+  }
+}
+
+
 
 // Carrega os documentos ao iniciar
 loadDocuments();
