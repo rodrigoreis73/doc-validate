@@ -6,7 +6,8 @@ body {
   }
   
   .container {
-    max-width: 600px;
+    max-width: 1500px;
+  /* max-width: auto;*/
     margin: auto;
     background: #fff;
     padding: 20px;
@@ -84,6 +85,57 @@ body::before {
     background-repeat: no-repeat;
     opacity: 0.1; /* Ajuste o valor para mais ou menos transparência */
     z-index: -1; /* Mantém a imagem atrás do conteúdo */
+}
+
+/* Estilização básica para o corpo */
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f0f0f0;
+  padding: 20px;
+}
+
+/* Estilo para o label 
+label {
+  font-weight: bold;
+  margin-bottom: 10px;
+  display: block;
+  color: #333;
+} */
+
+/* Container para centralizar e posicionar o select */
+.custom-select {
+  /*position: relative;*/
+/* width: 300px;*/
+  width: 300px;
+  margin-bottom: 5px; /* Exemplo: adiciona espaço abaixo do select */
+}
+
+/* Estilização do select */
+select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+  font-size: 16px;
+  /* Remove a seta padrão em alguns navegadores */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  /* Adiciona uma seta customizada */
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2210%22%20height%3D%225%22%20viewBox%3D%220%200%2010%205%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M0%200l5%205%205-5z%22%20fill%3D%22%23999%22/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 10px 5px;
+  cursor: pointer;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+/* Efeito de foco no select */
+select:focus {
+  outline: none;
+  border-color: #66afe9;
+  box-shadow: 0 0 5px rgba(102, 175, 233, 0.6);
 }
 
   

@@ -1,30 +1,100 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Document Manager</title>
   <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
   <div class="container">
     <h1>Gerenciador de DocumentosDEVV</h1>
     <form id="documentForm">
+
+      <label for="unidadeName">Unidade:</label>
+      <select id="unidadeName" required>
+        <option value="">Selecione uma opção</option>
+        <option value="Escritório">Escritório</option>
+        <option value="CIC BH">CIC BH</option>
+        <option value="APS Santa Efigênia">APS Santa Efigênia</option>
+        <option value="APS Libertas">APS Libertas</option>
+        <option value="APS GV">APS GV</option>
+        <option value="APS Juiz de Fora">APS Juiz de Fora</option>
+        <option value="APS Diamantina">APS Diamantina</option>
+        <option value="APS Divinópolis">APS Divinópolis</option>
+        <option value="APS Contagem">APS Contagem</option>
+        <option value="APS Brumadinho">APS Brumadinho</option>
+        <option value="APS Montes Claros">APS Montes Claros</option>
+        <option value="APS Uberlândia">APS Uberlândia</option>
+        <option value="APS Pouso Alegre">APS Pouso Alegre</option>
+        <option value="Acolher Neuro BH">Acolher Neuro BH</option>
+        <option value="Outros Projetos">Outros Projetos</option>
+      </select>
+
       <label for="docName">Nome do Documento:</label>
       <input type="text" id="docName" required>
-      
+
+      <label for="typeDoc">Tipo de Documento:</label>
+      <select id="typeDoc" required>
+        <option value="">Selecione uma opção</option>
+        <option value="Alvará Sanitário">Alvará Sanitário</option>
+        <option value="Alvará de localização">Alvará de localização</option>
+        <option value="AVCB">AVCB</option>
+        <option value="Contratos fornecedores">Contratos fornecedores</option>
+        <option value="Contratos de prestadores">Contratos de prestadores</option>
+        <option value="Aditivos de contratos">Aditivos de contratos</option>
+        <option value="Limpeza de caixa d´água">Limpeza de caixa d´água</option>
+        <option value="Relatório vistoria VISA">Relatório vistoria VISA</option>
+        <option value="PGRSS">PGRSS</option>
+        <option value="Responsabilidade técnica">Responsabilidade técnica</option>
+        <option value="Projeto arquitetônico">Projeto arquitetônico</option>
+        <option value="Licenciamento ambiental">Licenciamento ambiental</option>
+        <option value="POP">POP</option>
+        <option value="Licitação">Licitação</option>
+        <option value="Processos">Processos</option>
+        <option value="CNPJ">CNPJ</option>
+        <option value="CNES">CNES</option>
+        <option value="Outros Projetos">Outros Projetos</option>
+      </select>
+
       <label for="dueDate">Data de Vencimento:</label>
       <input type="date" id="dueDate" required>
-      
+
+      <label for="nameResp">Nome do Responsável:</label>
+      <input type="text" id="nameResp" required>
+
+      <label for="email">Email para Alerta:</label>
+      <input type="text" id="email" required>
+
+      <label for="period">Período do Alerta:</label>
+      <select id="period" required>
+        <option value="">Selecione uma opção</option>
+        <option value="7">7 dias antes</option>
+        <option value="15">15 dias antes</option>
+        <option value="30">30 dias antes</option>
+        <option value="60">60 dias antes</option>
+        <option value="90">90 dias antes</option>
+        <option value="120">120 dias antes</option>
+      </select>
+
       <button type="submit">Cadastrar</button>
+
     </form>
     <hr>
     <h2>Lista de Documentos</h2>
     <table>
       <thead>
         <tr>
-          <th>Nome</th>
           <th>Data de Vencimento</th>
+          <th>Unidade</th>
+          <th>Nome</th>
+          <th>Nome Responsável</th>
+          <th>Email Alerta</th>
+          <th>Periodo</th>
+          <th>Tipo de Documento</th>
+          <th>Ações</th>
         </tr>
       </thead>
       <tbody id="documentList">
@@ -34,4 +104,5 @@
   </div>
   <script src="script.js"></script>
 </body>
+
 </html>
