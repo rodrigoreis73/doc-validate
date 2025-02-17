@@ -1,5 +1,7 @@
+// server.js
 const express = require("express");
-const sqlite3 = require("sqlite3").verbose();
+//const mysql = require("mysql");
+const mysql = require("mysql2");
 const bodyParser = require("body-parser");
 const nodemailer = require("nodemailer");
 const cron = require("node-cron");
@@ -10,31 +12,57 @@ app.use(bodyParser.json());
 app.use(cors());
 app.use(express.json());
 
-// Configura o banco de dados
-const db = new sqlite3.Database("documents.db");
+// Configuração da conexão com o MySQL
+const connection = mysql.createConnection({
+  host: "10.10.0.22",
+  user: "root",
+  password: "fyi2cYyFXOVUrUf21wXq6Bz5MkeMwR", // substitua pela sua senha
+  database: "documents_db", // certifique-se de que este banco de dados existe
+});
 
-db.run(`
-  CREATE TABLE IF NOT EXISTS documents (
-    id INTEGER PRIMARY KEY, 
-    unidadeName TEXT, 
-    docName TEXT, 
-    typeDoc TEXT, 
-    dueDate TEXT, 
-    nameResp TEXT, 
-    email TEXT, 
-    period TEXT,
-    lastAlert TEXT
-  )
-`);
+connection.connect((err) => {
+  if (err) {
+    console.error("Erro ao conectar ao MySQL:", err);
+    return;
+  }
+  console.log("Conectado ao MySQL");
 
+  // Cria a tabela 'documents' se ela não existir
+  const createTableQuery = `
+    CREATE TABLE IF NOT EXISTS documents (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      unidadeName VARCHAR(255),
+      docName VARCHAR(255),
+      typeDoc VARCHAR(255),
+      dueDate DATE,
+      nameResp VARCHAR(255),
+      email VARCHAR(255),
+      period VARCHAR(255),
+      lastAlert DATE
+    )
+  `;
+  connection.query(createTableQuery, (err) => {
+    if (err) console.error("Erro ao criar tabela:", err);
+    else console.log("Tabela 'documents' pronta");
+  });
+});
+
+// Endpoint para cadastrar documento
 app.post("/documents", (req, res) => {
   const { unidadeName, docName, typeDoc, dueDate, nameResp, email, period } =
     req.body;
-  db.run(
-    "INSERT INTO documents (unidadeName, docName, typeDoc, dueDate, nameResp, email, period) VALUES (?, ?, ?, ?, ?, ?, ?)",
+  const query = `
+    INSERT INTO documents (unidadeName, docName, typeDoc, dueDate, nameResp, email, period)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `;
+  connection.query(
+    query,
     [unidadeName, docName, typeDoc, dueDate, nameResp, email, period],
     (err) => {
-      if (err) return res.status(500).send("Erro ao salvar documento.");
+      if (err) {
+        console.error("Erro ao salvar documento:", err);
+        return res.status(500).send("Erro ao salvar documento.");
+      }
       res.status(200).send("Documento cadastrado!");
     }
   );
@@ -42,77 +70,129 @@ app.post("/documents", (req, res) => {
 
 // Endpoint para listar documentos
 app.get("/documents", (req, res) => {
-  db.all("SELECT * FROM documents", (err, rows) => {
+  connection.query("SELECT * FROM documents", (err, results) => {
     if (err) return res.status(500).send("Erro ao listar documentos.");
-    res.json(rows);
+
+    // Converter dueDate para YYYY-MM-DD
+    results.forEach((doc) => {
+      if (doc.dueDate instanceof Date) {
+        doc.dueDate = doc.dueDate.toISOString().split("T")[0]; // "YYYY-MM-DD"
+      }
+    });
+
+    res.json(results);
   });
 });
 
-//Endpoint para atualizar documento
+// Endpoint para atualizar documento
 app.put("/documents/:id", (req, res) => {
   const { id } = req.params;
   const { unidadeName, docName, typeDoc, dueDate, nameResp, email, period } =
     req.body;
 
-  // Buscar o documento atual antes de editar
-  db.get("SELECT dueDate FROM documents WHERE id = ?", [id], (err, row) => {
-    if (err) return res.status(500).send("Erro ao buscar documento.");
+  // Busca o documento atual para verificar se a dueDate foi alterada
+  const selectQuery = "SELECT dueDate FROM documents WHERE id = ?";
+  connection.query(selectQuery, [id], (err, results) => {
+    if (err) {
+      console.error("Erro ao buscar documento:", err);
+      return res.status(500).send("Erro ao buscar documento.");
+    }
+    if (results.length === 0) {
+      return res.status(404).send("Documento não encontrado.");
+    }
 
-    const dueDateChanged = row && row.dueDate !== dueDate; // Verifica se a dueDate foi alterada
+    // Converte a dueDate atual para o formato 'YYYY-MM-DD'
+    const currentDueDate = results[0].dueDate
+      ? results[0].dueDate.toISOString().split("T")[0]
+      : null;
+    const dueDateChanged = currentDueDate !== dueDate;
 
-    // Se dueDate foi alterado, resetamos o lastAlert
-    const updateQuery = dueDateChanged
-      ? "UPDATE documents SET unidadeName = ?, docName = ?, typeDoc = ?, dueDate = ?, nameResp = ?, email = ?, period = ?, lastAlert = null WHERE id = ?"
-      : "UPDATE documents SET unidadeName = ?, docName = ?, typeDoc = ?, dueDate = ?, nameResp = ?, email = ?, period = ? WHERE id = ?";
+    let updateQuery;
+    let params;
 
-    const params = dueDateChanged
-      ? [unidadeName, docName, typeDoc, dueDate, nameResp, email, period, id]
-      : [unidadeName, docName, typeDoc, dueDate, nameResp, email, period, id];
+    if (dueDateChanged) {
+      updateQuery = `
+        UPDATE documents 
+        SET unidadeName = ?, docName = ?, typeDoc = ?, dueDate = ?, nameResp = ?, email = ?, period = ?, lastAlert = NULL
+        WHERE id = ?
+      `;
+      params = [
+        unidadeName,
+        docName,
+        typeDoc,
+        dueDate,
+        nameResp,
+        email,
+        period,
+        id,
+      ];
+    } else {
+      updateQuery = `
+        UPDATE documents 
+        SET unidadeName = ?, docName = ?, typeDoc = ?, dueDate = ?, nameResp = ?, email = ?, period = ?
+        WHERE id = ?
+      `;
+      params = [
+        unidadeName,
+        docName,
+        typeDoc,
+        dueDate,
+        nameResp,
+        email,
+        period,
+        id,
+      ];
+    }
 
-    db.run(updateQuery, params, (updateErr) => {
-      if (updateErr)
+    connection.query(updateQuery, params, (err) => {
+      if (err) {
+        console.error("Erro ao atualizar documento:", err);
         return res.status(500).send("Erro ao atualizar documento.");
+      }
       res.status(200).send("Documento atualizado com sucesso!");
     });
   });
 });
 
-//Endpoint para excluir um documento
+// Endpoint para excluir documento
 app.delete("/documents/:id", (req, res) => {
   const { id } = req.params;
-
-  db.run("DELETE FROM documents WHERE id = ?", [id], (err) => {
-    if (err) return res.status(500).send("Erro ao excluir documento.");
+  const query = "DELETE FROM documents WHERE id = ?";
+  connection.query(query, [id], (err) => {
+    if (err) {
+      console.error("Erro ao excluir documento:", err);
+      return res.status(500).send("Erro ao excluir documento.");
+    }
     res.status(200).send("Documento excluído com sucesso!");
   });
 });
 
-// Configuração do transporte de e-mails
+// Configuração do transporte de e-mails com Nodemailer
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: "rodrigodosreissilva471@gmail.com",
-    pass: "ftyteorxgiikprys", // Use um app password para maior segurança
+    pass: "ftyteorxgiikprys", // Use uma senha de app para maior segurança
   },
 });
 
-// Cron job para checar lastAlert
-
+// Cron job para checar e enviar alertas (executa a cada minuto)
 cron.schedule("* * * * *", () => {
-  // Executa diariamente às 08:00
   console.log("Verificando documentos para envio de alerta...");
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  db.all("SELECT * FROM documents", [], (err, rows) => {
+  const query = "SELECT * FROM documents";
+  connection.query(query, (err, rows) => {
     if (err) {
       console.error("Erro ao buscar documentos:", err);
       return;
     }
 
     rows.forEach((doc) => {
-      const alertDays = parseInt(doc.period.match(/\d+/)?.[0] || "0"); // Extrai o número de dias do período
+      const alertDaysMatch = doc.period.match(/\d+/);
+      const alertDays = alertDaysMatch ? parseInt(alertDaysMatch[0]) : 0;
       const dueDate = new Date(doc.dueDate);
       dueDate.setHours(0, 0, 0, 0);
 
@@ -131,24 +211,21 @@ cron.schedule("* * * * *", () => {
       oneWeekAgo.setDate(today.getDate() - 7);
 
       if (
-        (lastAlert === null && alertDate.getTime() <= dueDate) ||
+        //(lastAlert === null && alertDate.getTime() <= dueDate.getTime()) ||
+        (lastAlert === null && today.getTime() >= alertDate.getTime()) ||
         (lastAlert !== null && lastAlert.getTime() < oneWeekAgo.getTime())
       ) {
         console.log(`✅ Enviando alerta para ${doc.email}`);
         sendEmailAlert(doc);
 
-        // Atualizar `lastAlert` no banco
-        db.run(
-          "UPDATE documents SET lastAlert = ? WHERE id = ?",
-          [today.toISOString().split("T")[0], doc.id],
-          (updateErr) => {
-            if (updateErr)
-              console.error(
-                `Erro ao atualizar lastAlert para ${doc.id}:`,
-                updateErr
-              );
+        // Atualiza o lastAlert no banco
+        const updateQuery = "UPDATE documents SET lastAlert = ? WHERE id = ?";
+        const lastAlertDate = today.toISOString().split("T")[0];
+        connection.query(updateQuery, [lastAlertDate, doc.id], (err) => {
+          if (err) {
+            console.error(`Erro ao atualizar lastAlert para ${doc.id}:`, err);
           }
-        );
+        });
       } else {
         console.log(`❌ Nenhum alerta enviado para ID ${doc.id}`);
       }
@@ -157,18 +234,12 @@ cron.schedule("* * * * *", () => {
 });
 
 function sendEmailAlert(doc) {
-  const emailList = doc.email.split(",").map((email) => email.trim()); // Divide os emails e remove espaços extras
-
+  const emailList = doc.email.split(",").map((email) => email.trim());
   const mailOptions = {
     from: "rodrigodosreissilva471@gmail.com",
-    to: emailList, // O Nodemailer aceita um array de emails
+    to: emailList,
     subject: `Alerta: Documento "${doc.docName}"`,
-    text: `Olá, "${doc.nameResp}" \n\n 
-    Este é um alerta referente ao documento "${doc.docName}" da unidade "${doc.unidadeName}".\n
-    O alerta foi enviado com base no período escolhido: ${doc.period}.\n
-    Por favor, verifique a situação do documento.\n\n
-    Atenciosamente,\n
-    Sistema de Gerenciamento de Documentos`,
+    text: `Olá, "${doc.nameResp}"\n\nEste é um alerta referente ao documento "${doc.docName}" da unidade "${doc.unidadeName}".\nO alerta foi enviado com base no período escolhido: ${doc.period}.\nPor favor, verifique a situação do documento.\n\nAtenciosamente,\nSistema de Gerenciamento de Documentos`,
   };
 
   transporter.sendMail(mailOptions, (err, info) => {
@@ -179,33 +250,5 @@ function sendEmailAlert(doc) {
     }
   });
 }
-
-/*Ajustar sendEmailAlert
-
-function sendEmailAlert(doc) {
-  const mailOptions = {
-    from: "rodrigodosreissilva471@gmail.com",
-    to: doc.email,
-    subject: `Alerta: Documento "${doc.docName}" vence em breve`,
-    text: `Olá ${doc.nameResp},\n\n
-        O documento "${doc.docName}" da unidade "${
-      doc.unidadeName
-    }  " vence em ${new Date(doc.dueDate).toLocaleDateString()}.\n
-        Este alerta foi enviado pois você escolheu um período de ${
-          doc.period
-        }.\n
-        Por favor, verifique a situação do documento.\n\n
-        Atenciosamente,\n
-        Sistema de Gerenciamento de Documentos`,
-  };
-
-  transporter.sendMail(mailOptions, (err, info) => {
-    if (err) {
-      console.error(`Erro ao enviar email para ${doc.email}:`, err);
-    } else {
-      console.log(`Email enviado para ${doc.email}:`, info.response);
-    }
-  });
-}*/
 
 app.listen(3000, () => console.log("Servidor rodando na porta 3000"));

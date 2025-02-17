@@ -78,11 +78,23 @@ async function loadDocuments() {
     })
     .join("");
 }
-function formatDate(dateString) {
-  const date = new Date(dateString + "T00:00:00"); // Forçar horário zero UTC
-  return date.toLocaleDateString("pt-BR", { timeZone: "UTC" }); // Ajustar para o fuso correto
+
+function formatDate(dateValue) {
+  // Se vier "2025-02-17" ou um objeto Date, isso normalmente funciona bem
+  const date = new Date(dateValue);
+
+  // Se ainda assim for inválido, retorne algo amigável
+  if (isNaN(date.getTime())) {
+    return "Data Inválida";
+  }
+
+  return date.toLocaleDateString("pt-BR", {
+    timeZone: "UTC",
+  });
 }
+
 //Função para editar um documento
+// Função para editar um documento
 function editDocument(
   id,
   currentUnidadeName,
@@ -93,12 +105,17 @@ function editDocument(
   currentEmail,
   currentPeriod
 ) {
+  // Formatar a data para YYYY-MM-DD se ela estiver no formato ISO
+  let formattedDueDate = currentDueDate.includes("T")
+    ? currentDueDate.split("T")[0]
+    : currentDueDate;
+
   const newUnidadeName = prompt("Nova unidade:", currentUnidadeName);
   const newDocName = prompt("Novo nome do documento:", currentDocName);
   const newTypeDoc = prompt("Novo tipo de documento:", currentTypeDoc);
   const newDueDate = prompt(
     "Nova data de vencimento (AAAA-MM-DD):",
-    currentDueDate
+    formattedDueDate
   );
   const newNameResp = prompt("Novo responsável:", currentNameResp);
   const newEmail = prompt("Novo email:", currentEmail);
@@ -112,7 +129,7 @@ function editDocument(
         unidadeName: newUnidadeName,
         docName: newDocName,
         typeDoc: newTypeDoc,
-        dueDate: newDueDate,
+        dueDate: newDueDate, // A data já está no formato correto
         nameResp: newNameResp,
         email: newEmail,
         period: newPeriod,
